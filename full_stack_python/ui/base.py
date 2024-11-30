@@ -10,6 +10,7 @@ def base_layout_component(child, *args, **kwargs) -> rx.Component:
         rx.box(
             child,
             # bg=rx.color("accent", 3),
+            bg=rx.color("red", 3),
             padding="1em",
             width="100%",
             id="my-content-area-el"

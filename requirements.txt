@@ -1,2 +1,4 @@
 reflex==0.5.3
 reflex-local-auth
+psycopg2-binary
+python-dotenv
