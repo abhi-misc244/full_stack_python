@@ -19,7 +19,7 @@ from .auth.state import SessionState
 #from .articles.state import ArticlePublicState
 
 #from . import blog, contact, navigation, pages
-from . import contact, navigation, pages
+from . import contact, navigation, pages, project
 
 
 def index() -> rx.Component:
@@ -43,22 +43,23 @@ app = rx.App(
     )
 
 )
+
 app.add_page(index,        
     )
+
+
+
 # reflex_local_auth pages
-app.add_page(
-    my_login_page,
+app.add_page(my_login_page,
     route=reflex_local_auth.routes.LOGIN_ROUTE,
     title="Login",
 )
-app.add_page(
-    my_register_page,
+app.add_page(my_register_page,
     route=reflex_local_auth.routes.REGISTER_ROUTE,
     title="Register",
 )
 
-app.add_page(
-    my_logout_page,
+app.add_page(my_logout_page,
     route=navigation.routes.LOGOUT_ROUTE,
     title="Logout",
 )
@@ -67,8 +68,7 @@ app.add_page(
 app.add_page(pages.about_page, 
              route=navigation.routes.ABOUT_US_ROUTE)
 
-app.add_page(
-    pages.protected_page, 
+app.add_page(pages.protected_page, 
     route="/protected/",
     on_load=SessionState.on_load
 )
@@ -80,3 +80,43 @@ app.add_page(
     route=navigation.routes.CONTACT_ENTRIES_ROUTE,
     on_load=contact.ContactState.list_entries
 )
+
+'''app.add_page(
+    project.project_entries_list_page, 
+    route=navigation.routes.PROJECT_ENTRIES_ROUTE,
+    on_load=project.ProjectState.list_entries
+)
+
+app.add_page(
+    project.project_page, 
+    route=navigation.routes.PROJECT_ROUTE,
+    on_load=project.ProjectState.list_entries
+)
+'''
+
+
+
+app.add_page(
+    project.project_list_page, 
+    route=navigation.routes.PROJECTS_ROUTE,
+    on_load=project.ProjectState.load_projects
+    
+)
+
+app.add_page(
+    project.project_add_page, 
+    route=navigation.routes.PROJECT_ADD_ROUTE
+)
+
+app.add_page(
+    project.project_detail_page, 
+    route="/project/[project_id]",
+    on_load=project.ProjectState.get_project_detail
+)
+
+app.add_page(
+    project.project_edit_page, 
+    route="/project/[project_id]/edit",
+    on_load=project.ProjectState.get_project_detail
+)
+
