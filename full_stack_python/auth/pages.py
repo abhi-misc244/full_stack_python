@@ -11,7 +11,7 @@ from .state import SessionState
 
 def my_login_page()->rx.Component:
     return base_page(
-        rx.center(
+        rx.center(            
             rx.cond(
                 LoginState.is_hydrated,  # type: ignore
                 rx.card(login_form()),

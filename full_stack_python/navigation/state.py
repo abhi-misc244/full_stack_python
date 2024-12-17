@@ -18,8 +18,6 @@ class NavState(rx.State):
     def to_about_us(self):
         return rx.redirect(routes.ABOUT_US_ROUTE)
     
-    def to_articles(self):
-        return rx.redirect(routes.ARTICLE_LIST_ROUTE)
     
     def to_contact(self):
         return rx.redirect(routes.CONTACT_US_ROUTE)
@@ -31,5 +29,8 @@ class NavState(rx.State):
         return rx.redirect(routes.PROJECT_ADD_ROUTE)
     def to_project_create(self):
         return self.to_project_add()
-    
+
+'''    def to_articles(self):
+        return rx.redirect(routes.ARTICLE_LIST_ROUTE)'''
+
     
