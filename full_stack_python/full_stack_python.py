@@ -6,20 +6,15 @@ import reflex_local_auth
 from rxconfig import config
 from .ui.base import base_page
 
+from .auth.state import SessionState
+from . import contact, navigation, pages, project, calculation
+
+
 from .auth.pages import (
     my_login_page,
     my_register_page,
     my_logout_page
 )
-from .auth.state import SessionState
-
-
-#from .articles.detail import article_detail_page
-#from .articles.list import article_public_list_page, article_public_list_component
-#from .articles.state import ArticlePublicState
-
-#from . import blog, contact, navigation, pages
-from . import contact, navigation, pages, project
 
 
 def index() -> rx.Component:
@@ -68,11 +63,6 @@ app.add_page(my_logout_page,
 app.add_page(pages.about_page, 
              route=navigation.routes.ABOUT_US_ROUTE)
 
-app.add_page(pages.protected_page, 
-    route="/protected/",
-    on_load=SessionState.on_load
-)
-
 app.add_page(contact.contact_page, 
              route=navigation.routes.CONTACT_US_ROUTE)
 app.add_page(
@@ -80,21 +70,6 @@ app.add_page(
     route=navigation.routes.CONTACT_ENTRIES_ROUTE,
     on_load=contact.ContactState.list_entries
 )
-
-'''app.add_page(
-    project.project_entries_list_page, 
-    route=navigation.routes.PROJECT_ENTRIES_ROUTE,
-    on_load=project.ProjectState.list_entries
-)
-
-app.add_page(
-    project.project_page, 
-    route=navigation.routes.PROJECT_ROUTE,
-    on_load=project.ProjectState.list_entries
-)
-'''
-
-
 
 app.add_page(
     project.project_list_page, 
@@ -120,3 +95,8 @@ app.add_page(
     on_load=project.ProjectState.get_project_detail
 )
 
+app.add_page(
+    calculation.maxdemand_page, 
+    route="/project/[project_id]/calculation/maxdemand",
+    on_load=calculation.LoadTableState.load_loads,
+)

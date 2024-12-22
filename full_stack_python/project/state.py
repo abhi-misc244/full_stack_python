@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from .. import navigation
 from ..auth.state import SessionState
-from ..models import ProjectModel, UserInfo
+from ..models import ProjectModel, UserInfo, LoadModel
 
 PROJECTS_ROUTE = navigation.routes.PROJECTS_ROUTE
 if PROJECTS_ROUTE.endswith("/"):
@@ -20,7 +20,7 @@ class ProjectState(SessionState):
     project_publish_active: bool = False
 
     @rx.var
-    def project_id(self):
+    def proj_id(self):
         return self.router.page.params.get("project_id", "")
 
     @rx.var
@@ -43,10 +43,10 @@ class ProjectState(SessionState):
             return 
         lookups = (
             (ProjectModel.userinfo_id == self.my_userinfo_id) &
-            (ProjectModel.id == self.project_id)
+            (ProjectModel.id == self.proj_id)
         )
         with rx.session() as session:
-            if self.project_id == "":
+            if self.proj_id == "":
                 self.project = None
                 return
             sql_statement = select(ProjectModel).options(
@@ -87,6 +87,20 @@ class ProjectState(SessionState):
             session.add(project)
             session.commit()
             session.refresh(project) # project.id
+
+            # Add three sample loads 
+            sample_loads = [
+                LoadModel(equip_id=1, desc="Sample Load 1", power_kW=10.0, pf=0.9, eff=0.85, project_id=project.id), 
+                LoadModel(equip_id=2, desc="Sample Load 2", power_kW=20.0, pf=0.95, eff=0.90, project_id=project.id), 
+                LoadModel(equip_id=3, desc="Sample Load 3", power_kW=30.0, pf=0.85, eff=0.80, project_id=project.id), 
+                ] 
+            session.add_all(sample_loads) 
+            session.commit()
+
+
+
+
+
             # print("added", project)
             self.project = project
 

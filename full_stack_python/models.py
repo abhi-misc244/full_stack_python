@@ -92,19 +92,17 @@ class ProjectModel(rx.Model, table=True):
         sa_column_kwargs={},
         nullable=True
     )
+    # Add the back_populates relationship in the ProjectModel
+    loads: list['LoadModel'] = Relationship(back_populates="project")
 
 
-'''class ProjectEntryModel(rx.Model, table=True):
-    user_id: int | None = None
-    userinfo_id: int = Field(default=None, foreign_key="userinfo.id")
-    userinfo: Optional['UserInfo'] = Relationship(back_populates="project_entries")
-    project_name: str
-    project_description: str | None = None    
-    created_at: datetime = Field(
-        default_factory=utils.timing.get_utc_now,
-        sa_type=sqlalchemy.DateTime(timezone=True),
-        sa_column_kwargs={
-            'server_default': sqlalchemy.func.now()
-        },
-        nullable=False
-    )'''
+class LoadModel(rx.Model, table=True):
+    equip_id: str
+    desc: str
+    power_kW: float
+    pf: float
+    eff: float
+
+    project_id: int = Field(default=None, foreign_key="projectmodel.id")
+    project: Optional['ProjectModel'] = Relationship(back_populates="loads")
+
