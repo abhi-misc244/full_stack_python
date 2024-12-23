@@ -98,10 +98,12 @@ class ProjectModel(rx.Model, table=True):
 
 class LoadModel(rx.Model, table=True):
     equip_id: str
-    desc: str
-    power_kW: float
-    pf: float
-    eff: float
+    desc: Optional[str] = None  # Make it nullable
+    power_kW: Optional[float] = None  # Make it nullable
+    pf: Optional[float] = None  # Make it nullable
+    eff: Optional[float] = None  # Make it nullable
+    voltage: Optional[float] = None  # Make it nullable
+    u_equip_id: str
 
     project_id: int = Field(default=None, foreign_key="projectmodel.id")
     project: Optional['ProjectModel'] = Relationship(back_populates="loads")

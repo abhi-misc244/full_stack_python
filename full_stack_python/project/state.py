@@ -90,9 +90,9 @@ class ProjectState(SessionState):
 
             # Add three sample loads 
             sample_loads = [
-                LoadModel(equip_id=1, desc="Sample Load 1", power_kW=10.0, pf=0.9, eff=0.85, project_id=project.id), 
-                LoadModel(equip_id=2, desc="Sample Load 2", power_kW=20.0, pf=0.95, eff=0.90, project_id=project.id), 
-                LoadModel(equip_id=3, desc="Sample Load 3", power_kW=30.0, pf=0.85, eff=0.80, project_id=project.id), 
+                LoadModel(equip_id='1', desc="Sample Load 1", power_kW=10.0, pf=0.9, eff=0.85, voltage=415, u_equip_id='3', project_id=project.id), 
+                LoadModel(equip_id='2', desc="Sample Load 2", power_kW=20.0, pf=0.95, eff=0.90, voltage=415, u_equip_id='3', project_id=project.id), 
+                LoadModel(equip_id='3', desc="Sample Load 3", power_kW=30.0, pf=0.85, eff=0.80, voltage=415, u_equip_id='3', project_id=project.id), 
                 ] 
             session.add_all(sample_loads) 
             session.commit()
