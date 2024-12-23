@@ -23,10 +23,6 @@ def project_detail_page() -> rx.Component:
                 edit_link_el,
                 align='end'
             ),
-            rx.text("User info id ", state.ProjectState.project.userinfo_id),
-            rx.text("User info: ", state.ProjectState.project.userinfo.to_string()),
-            rx.text("User: ", state.ProjectState.project.userinfo.user.to_string()),
-            rx.text(state.ProjectState.project.publish_date),
             rx.text(
                 state.ProjectState.project.description,
                 white_space='pre-wrap'

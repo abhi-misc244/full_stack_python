@@ -89,5 +89,3 @@ def project_list_page() ->rx.Component:
         ),
     ) 
 
-'''# rx.foreach(["abc", "abc", "cde"], foreach_callback),
-rx.foreach(state.ProjectState.projects, project_list_item),'''

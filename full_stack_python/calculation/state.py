@@ -1,20 +1,32 @@
 # calculation/state.py
 import reflex as rx
 import pandas as pd
-from ..models import LoadModel
+import reflex_local_auth.auth_session
+from ..models import LoadModel, ProjectModel, UserInfo
+from ..auth.state import SessionState
 from sqlmodel import select
 from ..project.state import ProjectState
 from typing import Optional, List
+from sqlalchemy import or_, cast, String
 
 # Define the state class for loading the load entries
 class LoadTableState(ProjectState):
     loads: List[LoadModel] = []
     #load: Optional['LoadModel'] = None
 
+    search_value =""
+
     def load_loads(self, *args, **kwargs):
+        print("Projects's user ID", self.project.userinfo_id)
+        print("Projects's ID", self.project.id)
+        print ("Users Userinfo ID", self.my_userinfo_id)
+        lookups = (
+            (LoadModel.project_id == self.proj_id) and
+            (UserInfo.user_id == self.my_userinfo_id)
+        )
         with rx.session() as session:
             result = session.exec(
-                select(LoadModel).where(LoadModel.project_id == self.proj_id)
+                select(LoadModel).where(lookups)
             ).all()
             self.loads = result
             #print (result)
@@ -38,57 +50,38 @@ class LoadTableState(ProjectState):
             self.load = result            
             #print(result)
             return self.load
+    
+    @rx.event
+    def filter_values(self, search_value):
+        self.search_value = search_value
+        self.load_entries()
+        #print (self.search_value)
 
 
-    '''@rx.var
+    @rx.event
     def load_entries(self) -> list[LoadModel]:
-        """Get all loads for a specific project from the database."""
+        # Start with your base query including the initial filters
         with rx.session() as session:
-            results = session.exec(
-                select(LoadModel).where(LoadModel.project_id == ProjectState.proj_id)
-                ).all()
-            
-            self.loads = [
-                results.dict() for result in results]'''
-    
-    '''def show_load(load: list):
-        """Show a perloadson in a table row."""
-        return rx.table.row(
-            rx.table.cell(load[0]),
-            
-        )
-
-
-    def loading_load_data_table():
-            return rx.table.root(
-                rx.table.header(
-                    rx.table.row(
-                        rx.table.column_header_cell("Equip ID"),
-                        rx.table.column_header_cell("Description"),
-                        rx.table.column_header_cell("Power (kW)"),
-                        rx.table.column_header_cell("Power Factor"),
-                        rx.table.column_header_cell("Efficiency"),
-                    ),
-                ),
-                rx.table.body(
-                    rx.foreach(
-                        LoadTableState.loads, "Testing"
-                    )
-                ),
-                #on_mount=LoadTableState.load_entries(ProjectState.project.id),
-                width="100%",
+            lookups = (
+                (LoadModel.project_id == self.proj_id) and
+                (UserInfo.user_id == self.my_userinfo_id)
             )
+            query = select(LoadModel).where(lookups)
 
-
-    
-    def load_entries(self) -> list[LoadModel]:
-        """Get all loads for a specific project from the database."""
-        with rx.session() as session:            
-            query = select(LoadModel)            
-            query = query.where(LoadModel.project_id == 4)
-            return session.exec(query).all()'''
-
-
-
+            # Add search filters if search value exists
+            if self.search_value != "":
+                search_value = (
+                    f"%{self.search_value.lower()}%"
+                )
+                query = query.where(
+                    or_(
+                        cast(LoadModel.equip_id, String).ilike(search_value),
+                        LoadModel.desc.ilike(search_value),
+                        cast(LoadModel.power_kW, String).ilike(search_value),
+                        cast(LoadModel.pf, String).ilike(search_value),
+                        cast(LoadModel.eff, String).ilike(search_value),
+                    )
+                )
+            self.loads = session.exec(query).all()
     
 

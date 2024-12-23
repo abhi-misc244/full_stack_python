@@ -5,14 +5,58 @@ from ..project.state import ProjectState
 from .state import LoadTableState
 import pandas as pd
 from ..models import LoadModel, ProjectModel
-
+from ..project.notfound import project_not_found
 
 @reflex_local_auth.require_login
 def maxdemand_page() -> rx.Component:
     page_title = "Calculate Maximum Demand of " + ProjectState.project.title
     #load_table = LoadTableState.loading_load_data_table
     #print("Checking this ",LoadTableState.loads)
-    my_child = rx.vstack(
+    my_child = rx.cond(
+        ProjectState.project,
+        rx.vstack(
+            rx.heading(page_title, size="9"),
+            rx.box(
+                rx.input(
+                    placeholder="Search here...",
+                    on_change=lambda value: LoadTableState.filter_values(value),
+                width="25%",    
+                ),
+                rx.table.root(
+                    rx.table.header(
+                        rx.table.row(
+                            rx.table.column_header_cell("Equip ID"),
+                            rx.table.column_header_cell("Description"),
+                            rx.table.column_header_cell("Power (kW)"),
+                            rx.table.column_header_cell("Power Factor"),
+                            rx.table.column_header_cell("Efficiency"),
+                        ),
+                    ),
+                    rx.table.body(
+                        rx.foreach(LoadTableState.loads,lambda load: rx.table.row
+                            (                        
+                                rx.table.row_header_cell(load.equip_id),
+                                rx.table.cell(load.desc),
+                                rx.table.cell(load.power_kW),
+                                rx.table.cell(load.pf),
+                                rx.table.cell(load.eff),
+                            ),
+                        ),
+                    ),
+                    on_mount=LoadTableState.load_entries,
+                    width="100%",
+                ),
+                width='50vw',
+            ),
+            spacing="5",
+            align="center",
+            min_height="85vh"
+        ),
+        project_not_found()
+    )
+    return base_page(my_child)
+
+'''        rx.vstack(
         rx.heading(page_title, size="9"),
         rx.desktop_only(            
             rx.box(
@@ -63,8 +107,7 @@ def maxdemand_page() -> rx.Component:
         spacing="5",
         align="center",
         min_height="95vh",
-    )
-    return base_page(my_child)
+    )'''
 
 
 def load_equipID_return(load: LoadModel):
@@ -84,20 +127,6 @@ def load_pf_return(load: LoadModel):
 
 def load_eff_return(load: LoadModel):
     return rx.text(load.eff)
-
-
-
-'''rx.table.body(
-                        rx.table.row(
-                            rx.table.row_header_cell(rx.foreach(LoadTableState.loads, load_equipID_return)),
-                            rx.table.cell(rx.foreach(LoadTableState.loads, load_desc_return)),
-                            rx.table.cell(rx.foreach(LoadTableState.loads, load_powerKW_return)),
-                            rx.table.cell(rx.foreach(LoadTableState.loads, load_pf_return)),
-                            rx.table.cell(rx.foreach(LoadTableState.loads, load_eff_return)),                            
-                        ),
-                    ),'''
-
-
 
 
 
