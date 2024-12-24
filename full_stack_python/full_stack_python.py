@@ -98,5 +98,9 @@ app.add_page(
 app.add_page(
     calculation.maxdemand_page, 
     route="/project/[project_id]/calculation/maxdemand",
-    on_load=calculation.LoadTableState.load_loads,
+    on_load=[
+        calculation.states.LoadState.LoadTableState.load_loads,
+        calculation.states.BusState.BusTableState.load_buses,
+    ]
+
 )

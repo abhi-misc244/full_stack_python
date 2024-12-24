@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from .. import navigation
 from ..auth.state import SessionState
-from ..models import ProjectModel, UserInfo, LoadModel
+from ..models import ProjectModel, UserInfo, LoadModel, BusModel, GeneratorModel, PowerNetworkModel
 
 PROJECTS_ROUTE = navigation.routes.PROJECTS_ROUTE
 if PROJECTS_ROUTE.endswith("/"):
@@ -23,17 +23,43 @@ class ProjectState(SessionState):
     def proj_id(self):
         return self.router.page.params.get("project_id", "")
 
+    '''@rx.var
+    def project_url(self):
+        if not self.project:
+            return f"{PROJECTS_ROUTE}"
+        return f"{PROJECTS_ROUTE}/{self.project.id}"'''
+    
     @rx.var
     def project_url(self):
         if not self.project:
             return f"{PROJECTS_ROUTE}"
-        return f"{PROJECTS_ROUTE}/{self.project.id}"
+        with rx.session() as session:
+            # Refresh the project instance within session scope
+            project = session.merge(self.project)
+            session.refresh(project)
+            if project is None:
+                return f"{PROJECTS_ROUTE}"
+            return f"{PROJECTS_ROUTE}/{project.id}"
 
+    '''@rx.var
+    def project_edit_url(self):
+        if not self.project:
+            return f"{PROJECTS_ROUTE}"
+        return f"{PROJECTS_ROUTE}/{self.project.id}/edit"'''
+    
     @rx.var
     def project_edit_url(self):
         if not self.project:
             return f"{PROJECTS_ROUTE}"
-        return f"{PROJECTS_ROUTE}/{self.project.id}/edit"
+        with rx.session() as session:
+            project = session.merge(self.project)
+            session.refresh(project)
+            if project is None:
+                return f"{PROJECTS_ROUTE}"
+            return f"{PROJECTS_ROUTE}/{project.id}/edit"
+    
+
+
 
     def get_project_detail(self):
         if self.my_userinfo_id is None:
@@ -90,19 +116,64 @@ class ProjectState(SessionState):
 
             # Add three sample loads 
             sample_loads = [
-                LoadModel(equip_id='1', desc="Sample Load 1", power_kW=10.0, pf=0.9, eff=0.85, voltage=415, u_equip_id='3', project_id=project.id), 
-                LoadModel(equip_id='2', desc="Sample Load 2", power_kW=20.0, pf=0.95, eff=0.90, voltage=415, u_equip_id='3', project_id=project.id), 
-                LoadModel(equip_id='3', desc="Sample Load 3", power_kW=30.0, pf=0.85, eff=0.80, voltage=415, u_equip_id='3', project_id=project.id), 
+                LoadModel(equip_id='1', desc="Sample Load 1", power_kW=10.0, pf=0.9, eff=0.85, voltage=415, phase =3, duty=0.8, scenario='A', u_equip_id='SB001', project_id=project.id), 
+                LoadModel(equip_id='2', desc="Sample Load 2", power_kW=20.0, pf=0.95, eff=0.90, voltage=415, phase =3, duty=0.8, scenario='A', u_equip_id='SB002', project_id=project.id), 
+                LoadModel(equip_id='3', desc="Sample Load 3", power_kW=30.0, pf=0.85, eff=0.80, voltage=415, phase =3, duty=0.8, scenario='A', u_equip_id='SB002', project_id=project.id), 
                 ] 
             session.add_all(sample_loads) 
+
+            # Add two sample Buses
+            sample_buses = [
+                BusModel(equip_id='SB001', desc="Sample Switchboard No 1", losses_per=.01, voltage=415, phase =3, scenario='A', u_equip_id='GRID01', project_id=project.id), 
+                BusModel(equip_id='SB002', desc="Sample Switchboard No 2", losses_per=.01, voltage=415, phase =3, scenario='A', u_equip_id='SB001', project_id=project.id), 
+                ] 
+            session.add_all(sample_buses)
+
+            # Add two sample Generators
+            sample_generators = [
+                GeneratorModel(equip_id='GRID01', desc="Grid Connection No. 1", power_kVA=10.0, pf=0.9, eff=0.85, losses_per=.01, voltage=415, phase =3, scenario='A', u_equip_id='N/A', project_id=project.id, swing_gen=True), 
+                GeneratorModel(equip_id='CAP01', desc="Sample Capacitor Bank", power_kVA=10.0, pf=1, eff=0.85, losses_per=.01, voltage=415, phase =3, scenario='A', u_equip_id='SB002', project_id=project.id, swing_gen=False), 
+                ] 
+            session.add_all(sample_generators)
+
+            # Create network connections for each load
+            network_connections = []
+            for load in sample_loads:
+                network_connections.append(
+                    PowerNetworkModel(
+                        load_eq_id=load.equip_id,
+                        bus_eq_id=None,  
+                        project_id=project.id
+                    )
+                )
+            for generator in sample_generators:
+                network_connections.append(
+                    PowerNetworkModel(
+                        load_eq_id=None,
+                        gen_eq_id=generator.equip_id,  
+                        bus_eq_id=None,
+                        project_id=project.id
+                    )
+                )
+            for bus in sample_buses:
+                network_connections.append(
+                    PowerNetworkModel(
+                        load_eq_id=None,
+                        gen_eq_id=None,
+                        bus_eq_id=bus.equip_id,  
+                        project_id=project.id
+                    )
+                )
+            session.add_all(network_connections)
+
+
+
             session.commit()
-
-
-
-
-
-            # print("added", project)
+            # Refresh project one final time after all operations
+            session.refresh(project)
+            # Assign to state within session
             self.project = project
+
 
     def save_project_edits(self, project_id:int, updated_data:dict):
         with rx.session() as session:

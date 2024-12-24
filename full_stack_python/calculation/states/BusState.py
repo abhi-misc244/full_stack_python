@@ -1,75 +1,64 @@
 # calculation/state.py
 import reflex as rx
-import pandas as pd
 import io
 import csv
-from typing import Optional, List
+from typing import List
 from sqlalchemy import or_, cast, String
 
-import reflex_local_auth.auth_session
-from ..models import LoadModel, ProjectModel, UserInfo
-from ..auth.state import SessionState
+from ...models import BusModel, UserInfo
 from sqlmodel import select, delete
-from ..project.state import ProjectState
+from ...project.state import ProjectState
 
 
-# Define the state class for loading the load entries
-class LoadTableState(ProjectState):
-    loads: List[LoadModel] = []
-    #load: Optional['LoadModel'] = None
-
+# Define the state class for loading the Bus entries
+class BusTableState(ProjectState):
+    buses: List[BusModel] = []
     search_value =""
 
-    def load_loads(self, *args, **kwargs):
-        #print("Projects's ID", self.project.id)
-        #print ("Users Userinfo ID", self.my_userinfo_id)
+    def load_buses(self, *args, **kwargs):
         lookups = (
-            (LoadModel.project_id == self.proj_id)
-            #(UserInfo.user_id == self.my_userinfo_id)
+            (BusModel.project_id == self.proj_id)
         )
         with rx.session() as session:
             result = session.exec(
-                select(LoadModel).where(lookups)
+                select(BusModel).where(lookups)
             ).all()
-            self.loads = result
-            #print (result)
+            self.buses = result
             
 
 
 
-    def get_load_detail(self):
+    def get_bus_detail(self):
         if self.proj_id is None:
-            self.load = None
+            self.bus = None
             return 
         lookups = (
-            (LoadModel.project_id == self.proj_id)
+            (BusModel.project_id == self.proj_id)
         )
         with rx.session() as session:
             if self.proj_id == "":
-                self.load = None
+                self.bus = None
                 return
-            sql_statement = select(LoadModel).where(lookups)
+            sql_statement = select(BusModel).where(lookups)
             result = session.exec(sql_statement).one_or_none()
-            self.load = result            
-            #print(result)
-            return self.load
+            self.bus = result            
+            return self.bus
     
     @rx.event
     def filter_values(self, search_value):
         self.search_value = search_value
-        self.load_entries()
-        #print (self.search_value)
+        self.bus_entries()
 
 
     @rx.event
-    def load_entries(self) -> list[LoadModel]:
+    def bus_entries(self) -> list[BusModel]:
         # Start with your base query including the initial filters
         with rx.session() as session:
             lookups = (
-                (LoadModel.project_id == self.proj_id) and
+                (BusModel.project_id == self.proj_id) and
                 (UserInfo.user_id == self.my_userinfo_id)
             )
-            query = select(LoadModel).where(lookups)
+            query = select(BusModel).where(lookups)
 
             # Add search filters if search value exists
             if self.search_value != "":
@@ -78,27 +67,25 @@ class LoadTableState(ProjectState):
                 )
                 query = query.where(
                     or_(
-                        LoadModel.equip_id.ilike(search_value),
-                        LoadModel.desc.ilike(search_value),
-                        cast(LoadModel.power_kW, String).ilike(search_value),
-                        cast(LoadModel.pf, String).ilike(search_value),
-                        cast(LoadModel.eff, String).ilike(search_value),
-                        cast(LoadModel.voltage, String).ilike(search_value),
-                        LoadModel.u_equip_id.ilike(search_value),
+                        BusModel.equip_id.ilike(search_value),
+                        BusModel.desc.ilike(search_value),
+                        cast(BusModel.voltage, String).ilike(search_value),
+                        BusModel.scenario.ilike(search_value),
+                        BusModel.u_equip_id.ilike(search_value),
                     )
                 )
-            self.loads = session.exec(query).all()
+            self.buses = session.exec(query).all()
 
 
     def _convert_to_csv(self) -> str:
         """Convert the users data to CSV format."""
 
         # Make sure to load the entries first
-        if not self.loads:
-            self.load_entries()
+        if not self.buses:
+            self.bus_entries()
 
         # Define the CSV file header excluding id and project_id
-        fieldnames = [field for field in list(LoadModel.__fields__) 
+        fieldnames = [field for field in list(BusModel.__fields__) 
             if field not in ["id", "project_id"]]
 
         # Create a string buffer to hold the CSV data
@@ -109,12 +96,12 @@ class LoadTableState(ProjectState):
         writer.writeheader()
 
 
-        for load in self.loads:
+        for bus in self.buses:
             # Convert to dict and remove unwanted fields
-            load_dict = load.dict()
+            bus_dict = bus.dict()
             for field in ["id", "project_id"]:
-                load_dict.pop(field, None)
-            writer.writerow(load_dict)
+                bus_dict.pop(field, None)
+            writer.writerow(bus_dict)
         
         # Get the CSV data as a string
         csv_data = output.getvalue()
@@ -142,14 +129,14 @@ class LoadTableState(ProjectState):
                 # Process the CSV data
                 with rx.session() as session:
                     try:
-                        # Modify the delete query to only use LoadModel
-                        delete_query = delete(LoadModel).where(
-                            LoadModel.project_id == self.proj_id
+                        # Modify the delete query to only use BusModel
+                        delete_query = delete(BusModel).where(
+                            BusModel.project_id == self.proj_id
                         )
                         session.exec(delete_query)
 
                         # Add new entries
-                        loads = []
+                        buses = []
                         csv_reader = csv.DictReader(io.StringIO(upload_data.decode()))
                         
                         for row in csv_reader:
@@ -159,15 +146,15 @@ class LoadTableState(ProjectState):
                                     "equip_id": str(row["equip_id"]),
                                     "desc": str(row["desc"]),
                                     "voltage": float(row["voltage"]),
+                                    "phase": int(row["phase"]),
                                     "u_equip_id": str(row["u_equip_id"]),
-                                    "power_kW": float(row["power_kW"]),
-                                    "pf": float(row["pf"]),
-                                    "eff": float(row["eff"]),
+                                    "losses_per": float(row["losses_per"]),
+                                    "scenario": str(row["scenario"]), 
                                     "project_id": self.proj_id
                                 }
                                 
-                                load = LoadModel(**processed_row)
-                                loads.append(load)
+                                bus = BusModel(**processed_row)
+                                buses.append(bus)
                                 
                             except (ValueError, KeyError) as e:
                                 return rx.window_alert(
@@ -175,12 +162,12 @@ class LoadTableState(ProjectState):
                                 )
                         
                         # Bulk insert all processed rows
-                        session.add_all(loads)
+                        session.add_all(buses)
                         session.commit()
                         
                         # Refresh the objects to get the auto-generated IDs
-                        for load in loads:
-                            session.refresh(load)
+                        for bus in buses:
+                            session.refresh(bus)
                             
                     except Exception as db_error:
                         session.rollback()
@@ -189,7 +176,7 @@ class LoadTableState(ProjectState):
                         )
                     
                 # Refresh the table data after successful upload
-                self.load_entries()
+                self.bus_entries()
                 return rx.window_alert("CSV file uploaded successfully!")
                 
             except Exception as file_error:
